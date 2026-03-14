@@ -19,12 +19,12 @@ Input (1682) → FC(20) → FC(10) → FC(20) → Output (1682)
 - **Optimizer:** RMSprop (lr=0.01, weight_decay=0.5)
 - **Epochs:** 200, iterating over each user per epoch
 
-## Tech Stack
+## 🛠 Tech Stack
 
 | | Technology | Purpose |
 |---|---|---|
 | 🔥 | PyTorch | Neural network framework |
-| 🐍 | Python 3.x | Runtime |
+| 🐍 | Python 3.8+ | Runtime |
 | 🔢 | NumPy | Numerical operations |
 | 🐼 | pandas | Data loading and preprocessing |
 | 🎬 | MovieLens 100K | Training and evaluation dataset |
@@ -49,18 +49,35 @@ pip install torch numpy pandas
    python ae.py
    ```
 
-   Prints per-epoch training loss, then reports test RMSE.
+   Prints per-epoch training loss, then reports test RMSE.  
+   Trained weights are saved to `sae_weights.pth`.
 
 ## Dataset
 
-[MovieLens 100K](https://grouplens.org/datasets/movielens/100k/) — 100,000 ratings (1–5) from 943 users on 1682 movies. Uses the `u1.base` / `u1.test` 80/20 split. The `ml-1m` dataset is loaded for reference but not used in training.
+[MovieLens 100K](https://grouplens.org/datasets/movielens/100k/) — 100,000 ratings (1–5) from 943 users on 1682 movies. Uses the `u1.base` / `u1.test` 80/20 split.
 
-## Known Issues
+## Modernization Notes
 
-- The `ml-1m` dataset is loaded at startup but never used — this is dead code carried over from the original tutorial.
-- `pd.read_csv` with `sep='::'` triggers a `ParserWarning` in newer pandas versions (multi-char separator falls back to the Python engine).
-- No GPU support — the model trains on CPU only. For large datasets, consider moving tensors to CUDA.
-- No model checkpointing — trained weights are not saved to disk.
+The codebase has been updated for compatibility with current PyTorch (2.x):
+
+- Removed dead `ml-1m` loading code that was never used
+- Replaced `target.requires_grad = False` with `target = input.clone().detach()`
+- Replaced `target.data > 0` with `target > 0` (`.data` accessor is discouraged)
+- Added `model.eval()` + `torch.no_grad()` for the test/inference loop
+- Added `model.train()` before the training loop
+- Added CUDA/CPU device selection
+- Added model weight saving via `torch.save()`
+- Wrapped execution in `if __name__ == "__main__"` guard
+- Used `os.path` for file paths (works from any working directory)
+- Refactored into clean functions (`load_data`, `convert`, `train`, `test`, `main`)
+- Modernized `super()` call (no need to pass class name in Python 3)
+- Renamed `input` variable to `input_data` to avoid shadowing the built-in
+
+## ⚠️ Known Issues
+
+- No GPU memory optimization — the full user×movie matrix is held in RAM. For larger datasets, consider batched DataLoader.
+- No hyperparameter tuning or early stopping.
+- The bottleneck (10 units) is very small; larger hidden layers may improve accuracy.
 
 ## License
 
